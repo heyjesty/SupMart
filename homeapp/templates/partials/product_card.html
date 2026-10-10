@@ -1,0 +1,20 @@
+{% load static %}<div class="sm-product">
+	<a href="{% url 'singleproduct' p.id %}" class="thumb">
+		<span class="tag">{{ p.Category|lower }}</span>
+		<img src="{% if p.Image %}{{ p.Image.url }}{% else %}{% static 'assets/img/products/product-img-1.jpg' %}{% endif %}" alt="{{ p.ProductName|title }}" loading="lazy">
+	</a>
+	<div class="body">
+		<a href="{% url 'singleproduct' p.id %}" class="name">{{ p.ProductName|lower }}</a>
+		<div class="unit">Per kg · Farm fresh</div>
+		<div class="foot">
+			<div class="sm-price">₹{{ p.Price }} <small>/kg</small></div>
+			<form action="{% url 'cartsave' %}" method="post">
+				{% csrf_token %}
+				<input type="hidden" name="productid" value="{{ p.id }}">
+				<input type="hidden" name="qty" value="1">
+				<input type="hidden" name="next" value="{{ request.get_full_path }}">
+				<button type="submit" class="btn btn-soft btn-sm" aria-label="Add {{ p.ProductName|title }} to cart"><i class="bi bi-plus-lg me-1"></i>Add</button>
+			</form>
+		</div>
+	</div>
+</div>

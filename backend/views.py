@@ -1,8 +1,6 @@
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from django.core.files.storage import FileSystemStorage
-from django.shortcuts import render, redirect
-from django.utils.datastructures import MultiValueDictKeyError
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
 from backend.models import categorydb, productdb
@@ -23,11 +21,15 @@ def categorysave(req):
     if req.method == "POST":
         cn = req.POST.get('categoryname')
         dn = req.POST.get('description')
-        img = req.FILES['image']
+        img = req.FILES.get('image')
+        if not img:
+            messages.error(req, "Please select an image")
+            return redirect(categorypage)
         obj = categorydb(CategoryName=cn, Description=dn, Image=img)
         obj.save()
-        messages.success(req,"Category Save Successfully")
+        messages.success(req, "Category Saved Successfully")
         return redirect(categorypage)
+    return redirect(categorypage)
 
 
 def categorydisplay(req):
@@ -36,7 +38,7 @@ def categorydisplay(req):
 
 
 def categoryedit(req, dataid):
-    data = categorydb.objects.get(id=dataid)
+    data = get_object_or_404(categorydb, id=dataid)
     return render(req, "categoryedit.html", {'data': data})
 
 
@@ -44,21 +46,21 @@ def categoryupdate(req, dataid):
     if req.method == "POST":
         ct = req.POST.get('categoryname')
         ds = req.POST.get('description')
-        try:
-            img = req.FILES['image']
-            fs = FileSystemStorage()
-            file = fs.save(img.name, img)
-        except MultiValueDictKeyError:
-            file = categorydb.objects.get(id=dataid).Image
-        categorydb.objects.filter(id=dataid).update(CategoryName=ct, Description=ds, Image=file)
-        messages.success(req,"Update  Successfully")
+        category = get_object_or_404(categorydb, id=dataid)
+        category.CategoryName = ct
+        category.Description = ds
+        img = req.FILES.get('image')
+        if img:
+            category.Image = img
+        category.save()
+        messages.success(req, "Update Successfully")
         return redirect(categorydisplay)
+    return redirect(categorydisplay)
 
 
 def categorydelete(req, dataid):
-    data = categorydb.objects.filter(id=dataid)
-    data.delete()
-    messages.warning(req,"Delete Successfully")
+    categorydb.objects.filter(id=dataid).delete()
+    messages.warning(req, "Delete Successfully")
     return redirect(categorydisplay)
 
 
@@ -74,11 +76,15 @@ def productsave(req):
         pn = req.POST.get('productname')
         ds = req.POST.get('description')
         pr = req.POST.get('price')
-        img = req.FILES['image']
+        img = req.FILES.get('image')
+        if not img:
+            messages.error(req, "Please select an image")
+            return redirect(productpage)
         obj = productdb(Category=ct, ProductName=pn, Description=ds, Price=pr, Image=img)
         obj.save()
-        messages.success(req,"Product Save successfully")
+        messages.success(req, "Product Saved Successfully")
         return redirect(productpage)
+    return redirect(productpage)
 
 
 def productdisplay(req):
@@ -88,7 +94,7 @@ def productdisplay(req):
 
 def productedit(req, dataid):
     cat = categorydb.objects.all()
-    data = productdb.objects.get(id=dataid)
+    data = get_object_or_404(productdb, id=dataid)
     return render(req, "productedit.html", {'data': data, 'cat': cat})
 
 
@@ -98,21 +104,23 @@ def productupdate(req, dataid):
         pn = req.POST.get('productname')
         ds = req.POST.get('description')
         pr = req.POST.get('price')
-        try:
-            img = req.FILES['image']
-            fs = FileSystemStorage()
-            file = fs.save(img.name, img)
-        except MultiValueDictKeyError:
-            file = productdb.objects.get(id=dataid).Image
-        productdb.objects.filter(id=dataid).update(Category=ct, ProductName=pn, Description=ds, Price=pr, Image=file)
-        messages.success(req, "Update successfully")
+        prod = get_object_or_404(productdb, id=dataid)
+        prod.Category = ct
+        prod.ProductName = pn
+        prod.Description = ds
+        prod.Price = pr
+        img = req.FILES.get('image')
+        if img:
+            prod.Image = img
+        prod.save()
+        messages.success(req, "Update Successfully")
         return redirect(productdisplay)
+    return redirect(productdisplay)
 
 
 def productdelete(req, dataid):
-    data = productdb.objects.filter(id=dataid)
-    data.delete()
-    messages.warning(req, "Delete successfully")
+    productdb.objects.filter(id=dataid).delete()
+    messages.warning(req, "Delete Successfully")
     return redirect(productdisplay)
 
 
@@ -125,26 +133,22 @@ def adminsave(request):
     if request.method == "POST":
         uname = request.POST.get('username')
         pwd = request.POST.get('password')
-        if User.objects.filter(username__contains=uname).exists():
-            user = authenticate(username=uname, password=pwd)
-            if user is not None:
-                login(request, user)
-                request.session['username'] = uname
-                request.session['password'] = pwd
-                messages.success(request, "Login Successfully")
-
-                return redirect(indexpage)
-            else:
-                messages.error(request,"Invalid username")
-                return redirect(adminpage)
-
+        user = authenticate(request, username=uname, password=pwd)
+        if user is not None:
+            login(request, user)
+            request.session['username'] = uname
+            request.session['password'] = pwd
+            messages.success(request, "Login Successfully")
+            return redirect(indexpage)
         else:
-            messages.error(request,"Invalid Password")
+            messages.error(request, "Invalid username or password")
             return redirect(adminpage)
+    return redirect(adminpage)
 
 
 def adminlogut(request):
-    del request.session['username']
-    del request.session['password']
-    messages.success(request,"Logout Successfully")
+    request.session.pop('username', None)
+    request.session.pop('password', None)
+    messages.success(request, "Logout Successfully")
     return redirect(adminpage)
+

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Order confirmed — SupMart{% endblock %}
+{% block newsletter %}{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width:760px">
+	<div class="sm-card p-4 p-md-5 text-center mb-4">
+		<div class="sm-empty p-0"><div class="ico"><i class="bi bi-check-lg"></i></div></div>
+		<h2 class="mb-2">Thank you, {{ order.C_Name }}!</h2>
+		<p class="text-muted mb-4">Your order <strong class="text-dark">#{{ order.order_number }}</strong> has been placed. A confirmation will be sent to {{ order.C_Email }}.</p>
+		<div class="sm-steps justify-content-center mb-4">
+			<span class="on"><span class="dot"><i class="bi bi-check"></i></span>Cart</span><i class="bi bi-chevron-right"></i>
+			<span class="on"><span class="dot"><i class="bi bi-check"></i></span>Checkout</span><i class="bi bi-chevron-right"></i>
+			<span class="on"><span class="dot"><i class="bi bi-check"></i></span>Done</span>
+		</div>
+		<div class="d-flex gap-2 justify-content-center flex-wrap">
+			<a href="{% url 'myorders' %}" class="btn btn-primary">View my orders</a>
+			<a href="{% url 'shop' %}" class="btn btn-light border">Continue shopping</a>
+		</div>
+	</div>
+
+	<div class="sm-card p-4">
+		<div class="row g-3 mb-3 small">
+			<div class="col-sm-4"><div class="text-muted">Order date</div><div class="fw-semibold">{{ order.Created|date:"d M Y, h:i A" }}</div></div>
+			<div class="col-sm-4"><div class="text-muted">Payment</div><div class="fw-semibold">{{ order.get_Payment_display }}</div></div>
+			<div class="col-sm-4"><div class="text-muted">Status</div><span class="sm-status {{ order.Status }}">{{ order.Status }}</span></div>
+		</div>
+		<div class="small mb-3"><span class="text-muted">Delivering to:</span> <span class="fw-semibold">{{ order.C_Address }}</span> · {{ order.C_Phone }}</div>
+		<hr>
+		{% for it in order.items.all %}
+		<div class="d-flex justify-content-between py-1"><span class="text-capitalize">{{ it.ProductName|lower }} <span class="text-muted">× {{ it.Quantity }}</span></span><span>₹{{ it.Total }}</span></div>
+		{% endfor %}
+		<hr>
+		<div class="sm-summary" style="position:static">
+			<div class="row-line"><span>Subtotal</span><span>₹{{ order.Subtotal }}</span></div>
+			<div class="row-line"><span>Delivery</span><span>{% if order.DeliveryFee %}₹{{ order.DeliveryFee }}{% else %}FREE{% endif %}</span></div>
+			<div class="row-line total"><span>Total</span><span>₹{{ order.Total }}</span></div>
+		</div>
+	</div>
+</div>
+{% endblock %}

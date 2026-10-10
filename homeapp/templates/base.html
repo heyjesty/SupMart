@@ -1,0 +1,214 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="{% block meta_description %}SupMart — farm-fresh fruits, vegetables and seeds delivered to your door.{% endblock %}">
+	<title>{% block title %}SupMart — Fresh Groceries Delivered{% endblock %}</title>
+	<link rel="icon" type="image/png" href="{% static 'assets/img/favicon.png' %}">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+	<link href="{% static 'store/store.css' %}" rel="stylesheet">
+	{% block extra_head %}{% endblock %}
+</head>
+<body>
+{% with current=request.resolver_match.url_name %}
+
+<div class="sm-topbar py-2">
+	<div class="container d-flex justify-content-between align-items-center gap-3">
+		<span><i class="bi bi-truck me-1"></i> Free delivery on orders above ₹500</span>
+		<span class="d-none d-md-inline"><i class="bi bi-telephone me-1"></i> <a href="tel:+911234567890">+91 12345 67890</a> &nbsp;·&nbsp; <i class="bi bi-clock me-1"></i> 7am – 10pm, every day</span>
+	</div>
+</div>
+
+<header class="sm-header">
+	<div class="container">
+		<div class="d-flex align-items-center gap-3 py-3">
+			<button class="btn btn-icon btn-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#smMenu" aria-label="Open menu"><i class="bi bi-list fs-4"></i></button>
+			<a href="{% url 'homepage' %}" class="sm-logo me-lg-3"><span class="mark"><i class="bi bi-basket2-fill"></i></span><span class="word">Sup<span>Mart</span></span></a>
+
+			<form action="{% url 'shop' %}" method="get" class="sm-search d-none d-md-block mx-lg-auto" role="search">
+				<i class="bi bi-search"></i>
+				<input type="search" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="Search for apples, onions, seeds…" aria-label="Search products">
+			</form>
+
+			<div class="d-flex align-items-center gap-1 ms-auto ms-md-0">
+				{% if current_user %}
+				<div class="dropdown">
+					<a href="#" class="sm-action" data-bs-toggle="dropdown" aria-expanded="false">
+						<span class="sm-avatar">{{ current_user|slice:":1" }}</span>
+						<span class="d-none d-lg-inline">{{ current_user }}</span>
+						<i class="bi bi-chevron-down small d-none d-lg-inline" style="font-size:.75rem"></i>
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end">
+						<li><a class="dropdown-item" href="{% url 'myorders' %}"><i class="bi bi-bag-check me-2"></i>My orders</a></li>
+						<li><a class="dropdown-item" href="{% url 'cartdisplay' %}"><i class="bi bi-cart3 me-2"></i>My cart</a></li>
+						<li><hr class="dropdown-divider"></li>
+						<li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Sign out</a></li>
+					</ul>
+				</div>
+				{% else %}
+				<a href="{% url 'loginpg' %}" class="sm-action"><i class="bi bi-person"></i><span class="d-none d-lg-inline">Sign in</span></a>
+				{% endif %}
+				<a href="{% url 'cartdisplay' %}" class="sm-action" aria-label="Cart">
+					<i class="bi bi-bag"></i>
+					{% if cart_count %}<span class="sm-badge">{{ cart_count }}</span>{% endif %}
+					<span class="d-none d-lg-inline">Cart</span>
+				</a>
+			</div>
+		</div>
+
+		<form action="{% url 'shop' %}" method="get" class="sm-search d-md-none pb-3" role="search">
+			<i class="bi bi-search" style="top:calc(50% - 8px)"></i>
+			<input type="search" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="Search products…" aria-label="Search products">
+		</form>
+	</div>
+
+	<nav class="sm-nav d-none d-lg-block">
+		<div class="container">
+			<ul class="nav">
+				<li class="nav-item"><a class="nav-link {% if current == 'homepage' or current == 'root' or current == 'home_root' %}active{% endif %}" href="{% url 'homepage' %}">Home</a></li>
+				<li class="nav-item"><a class="nav-link {% if current == 'shop' and not active_category %}active{% endif %}" href="{% url 'shop' %}">Shop all</a></li>
+				{% for c in nav_categories %}
+				<li class="nav-item"><a class="nav-link text-capitalize {% if active_category|lower == c.CategoryName|lower %}active{% endif %}" href="{% url 'pro' catname=c.CategoryName %}">{{ c.CategoryName|lower }}</a></li>
+				{% endfor %}
+				<li class="nav-item ms-auto"><a class="nav-link {% if current == 'aboutus' %}active{% endif %}" href="{% url 'aboutus' %}">About</a></li>
+				<li class="nav-item"><a class="nav-link {% if current == 'contactus' %}active{% endif %}" href="{% url 'contactus' %}">Contact</a></li>
+			</ul>
+		</div>
+	</nav>
+</header>
+
+<!-- mobile menu -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="smMenu" aria-labelledby="smMenuLabel">
+	<div class="offcanvas-header border-bottom">
+		<a href="{% url 'homepage' %}" class="sm-logo" id="smMenuLabel"><span class="mark"><i class="bi bi-basket2-fill"></i></span><span class="word">Sup<span>Mart</span></span></a>
+		<button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+	</div>
+	<div class="offcanvas-body">
+		<a class="sm-filter-link" href="{% url 'homepage' %}"><span><i class="bi bi-house me-2"></i>Home</span></a>
+		<a class="sm-filter-link" href="{% url 'shop' %}"><span><i class="bi bi-grid me-2"></i>Shop all</span></a>
+		<div class="text-muted small fw-semibold text-uppercase mt-3 mb-1 px-2">Categories</div>
+		{% for c in nav_categories %}
+		<a class="sm-filter-link" href="{% url 'pro' catname=c.CategoryName %}">{{ c.CategoryName|lower }} <i class="bi bi-chevron-right small"></i></a>
+		{% endfor %}
+		<hr>
+		<a class="sm-filter-link" href="{% url 'myorders' %}"><span><i class="bi bi-bag-check me-2"></i>My orders</span></a>
+		<a class="sm-filter-link" href="{% url 'aboutus' %}"><span><i class="bi bi-info-circle me-2"></i>About us</span></a>
+		<a class="sm-filter-link" href="{% url 'contactus' %}"><span><i class="bi bi-chat-dots me-2"></i>Contact</span></a>
+		{% if current_user %}
+		<a class="sm-filter-link text-danger" href="{% url 'logout' %}"><span><i class="bi bi-box-arrow-right me-2"></i>Sign out</span></a>
+		{% else %}
+		<a class="btn btn-primary w-100 mt-3" href="{% url 'loginpg' %}">Sign in</a>
+		{% endif %}
+	</div>
+</div>
+
+{% if messages %}
+<div class="sm-toasts" aria-live="polite">
+	{% for m in messages %}
+	<div class="alert alert-{{ m.tags|default:'info' }} alert-dismissible fade show" role="alert">
+		<i class="bi {% if m.tags == 'success' %}bi-check-circle-fill{% elif m.tags == 'danger' %}bi-exclamation-octagon-fill{% else %}bi-info-circle-fill{% endif %}"></i>
+		<span>{{ m }}</span>
+		<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	</div>
+	{% endfor %}
+</div>
+{% endif %}
+
+<main>
+	{% block content %}{% endblock %}
+</main>
+
+{% block newsletter %}
+<section class="container my-5">
+	<div class="sm-newsletter">
+		<div class="row align-items-center g-4">
+			<div class="col-lg-6">
+				<h3 class="mb-1">Get ₹50 off your first order</h3>
+				<p class="text-muted mb-0">Join our newsletter for weekly deals on seasonal produce.</p>
+			</div>
+			<div class="col-lg-6">
+				<form class="d-flex gap-2" onsubmit="event.preventDefault(); this.innerHTML='<p class=\'fw-semibold text-green mb-0\'><i class=\'bi bi-check-circle-fill me-1\'></i> You\'re subscribed — check your inbox!</p>';">
+					<input type="email" class="form-control" placeholder="Enter your email" required aria-label="Email address">
+					<button class="btn btn-primary px-4" type="submit">Subscribe</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</section>
+{% endblock %}
+
+<footer class="sm-footer pt-5">
+	<div class="container">
+		<div class="row g-4 pb-4">
+			<div class="col-lg-4">
+				<a href="{% url 'homepage' %}" class="sm-logo mb-3"><span class="mark"><i class="bi bi-basket2-fill"></i></span><span class="word">Sup<span>Mart</span></span></a>
+				<p class="mt-3 pe-lg-5">Farm-fresh fruits, vegetables and seeds sourced directly from local growers and delivered to your door the same day.</p>
+				<div class="social d-flex gap-2">
+					<a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+					<a href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+					<a href="#" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+					<a href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+				</div>
+			</div>
+			<div class="col-6 col-lg-2">
+				<h6>Shop</h6>
+				<ul class="list-unstyled">
+					<li><a href="{% url 'shop' %}">All products</a></li>
+					{% for c in nav_categories %}<li><a href="{% url 'pro' catname=c.CategoryName %}">{{ c.CategoryName|lower }}</a></li>{% endfor %}
+				</ul>
+			</div>
+			<div class="col-6 col-lg-2">
+				<h6>Account</h6>
+				<ul class="list-unstyled">
+					<li><a href="{% url 'myorders' %}">My orders</a></li>
+					<li><a href="{% url 'cartdisplay' %}">Cart</a></li>
+					<li><a href="{% url 'register' %}">Create account</a></li>
+				</ul>
+			</div>
+			<div class="col-lg-4">
+				<h6>Get in touch</h6>
+				<ul class="list-unstyled">
+					<li><i class="bi bi-geo-alt me-2"></i>34/8, East Hukupara, Gifirtok, Sadan</li>
+					<li style="text-transform:none"><i class="bi bi-envelope me-2"></i><a href="mailto:support@supmart.com">support@supmart.com</a></li>
+					<li><i class="bi bi-telephone me-2"></i><a href="tel:+911234567890">+91 12345 67890</a></li>
+				</ul>
+				<div class="d-flex gap-2 mt-3 fs-3 text-white-50"><i class="bi bi-credit-card-2-front"></i><i class="bi bi-cash-coin"></i><i class="bi bi-phone"></i><i class="bi bi-shield-check"></i></div>
+			</div>
+		</div>
+		<div class="bottom py-3 d-flex flex-column flex-md-row justify-content-between gap-2 small">
+			<span>© {% now "Y" %} SupMart. All rights reserved.</span>
+			<span><a href="{% url 'aboutus' %}">About</a> · <a href="{% url 'contactus' %}">Contact</a> · <a href="#">Privacy</a> · <a href="#">Terms</a></span>
+		</div>
+	</div>
+</footer>
+{% endwith %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+	// quantity steppers: <div class="sm-qty"><button data-step="-1">…<input>…<button data-step="1">
+	document.addEventListener('click', function (e) {
+		var btn = e.target.closest('.sm-qty [data-step]');
+		if (!btn) return;
+		var input = btn.parentElement.querySelector('input');
+		var v = Math.min(99, Math.max(1, (parseInt(input.value, 10) || 1) + parseInt(btn.dataset.step, 10)));
+		input.value = v;
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+	});
+	// auto-submit forms marked data-autosubmit when a field changes
+	document.addEventListener('change', function (e) {
+		var form = e.target.closest('form[data-autosubmit]');
+		if (form) form.submit();
+	});
+	// auto-dismiss toasts
+	setTimeout(function () {
+		document.querySelectorAll('.sm-toasts .alert').forEach(function (a) { bootstrap.Alert.getOrCreateInstance(a).close(); });
+	}, 4500);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

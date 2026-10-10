@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{% if active_category %}{{ active_category|title }}{% elif q %}Search: {{ q }}{% else %}Shop all{% endif %} — SupMart{% endblock %}
+
+{% block content %}
+<div class="sm-page-head">
+	<div class="container">
+		<nav aria-label="breadcrumb"><ol class="breadcrumb">
+			<li class="breadcrumb-item"><a href="{% url 'homepage' %}">Home</a></li>
+			<li class="breadcrumb-item {% if not active_category %}active{% endif %}">{% if active_category %}<a href="{% url 'shop' %}">Shop</a>{% else %}Shop{% endif %}</li>
+			{% if active_category %}<li class="breadcrumb-item active text-capitalize">{{ active_category|lower }}</li>{% endif %}
+		</ol></nav>
+		<h1 class="text-capitalize">{% if q %}Results for “{{ q }}”{% elif active_category %}{{ active_category|lower }}{% else %}All products{% endif %}</h1>
+		<p class="text-muted mb-0 mt-1">{{ total }} product{{ total|pluralize }} available</p>
+	</div>
+</div>
+
+<div class="container py-4 py-lg-5">
+	<div class="row g-4">
+		<aside class="col-lg-3 d-none d-lg-block">
+			<div class="sm-panel mb-3">
+				<h6 class="fw-bold mb-3">Categories</h6>
+				<a href="{% url 'shop' %}{% if q %}?q={{ q|urlencode }}{% endif %}" class="sm-filter-link {% if not active_category %}active{% endif %}">All products <i class="bi bi-chevron-right small"></i></a>
+				{% for c in nav_categories %}
+				<a href="{% url 'pro' catname=c.CategoryName %}" class="sm-filter-link {% if active_category|lower == c.CategoryName|lower %}active{% endif %}">{{ c.CategoryName|lower }} <i class="bi bi-chevron-right small"></i></a>
+				{% endfor %}
+			</div>
+			<div class="sm-panel bg-green-soft border-0">
+				<i class="bi bi-truck fs-3 text-green"></i>
+				<h6 class="fw-bold mt-2 mb-1">Free delivery</h6>
+				<p class="small text-muted mb-0">On every order above ₹500. Delivered fresh, same day.</p>
+			</div>
+		</aside>
+
+		<div class="col-lg-9">
+			<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-4">
+				<div class="d-flex gap-2 overflow-auto pb-1 d-lg-none" style="max-width:100%">
+					<a href="{% url 'shop' %}" class="sm-chip {% if not active_category %}active{% endif %}">All</a>
+					{% for c in nav_categories %}
+					<a href="{% url 'pro' catname=c.CategoryName %}" class="sm-chip {% if active_category|lower == c.CategoryName|lower %}active{% endif %}">{{ c.CategoryName|lower }}</a>
+					{% endfor %}
+				</div>
+				{% if q %}<span class="sm-chip">“{{ q }}” <a href="{% if active_category %}{% url 'pro' catname=active_category %}{% else %}{% url 'shop' %}{% endif %}" class="text-muted" aria-label="Clear search"><i class="bi bi-x-lg"></i></a></span>{% else %}<span class="d-none d-lg-block"></span>{% endif %}
+				<form method="get" data-autosubmit class="d-flex align-items-center gap-2 ms-auto">
+					{% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+					<label for="sort" class="small text-muted text-nowrap">Sort by</label>
+					<select name="sort" id="sort" class="form-select form-select-sm" style="min-width:170px">
+						<option value="new" {% if sort == 'new' %}selected{% endif %}>Newest first</option>
+						<option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: low to high</option>
+						<option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: high to low</option>
+						<option value="name" {% if sort == 'name' %}selected{% endif %}>Name: A–Z</option>
+					</select>
+				</form>
+			</div>
+
+			<div class="row g-3 g-md-4">
+				{% for p in products %}
+				<div class="col-6 col-md-4">{% include "partials/product_card.html" %}</div>
+				{% empty %}
+				<div class="col-12">
+					<div class="sm-card sm-empty">
+						<div class="ico"><i class="bi bi-search"></i></div>
+						<h5>No products found</h5>
+						<p class="text-muted">Try a different search term or browse all categories.</p>
+						<a href="{% url 'shop' %}" class="btn btn-primary">Browse all products</a>
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+
+			{% if page.has_other_pages %}
+			<nav class="mt-5" aria-label="Product pages">
+				<ul class="pagination justify-content-center">
+					{% if page.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}"><i class="bi bi-chevron-left"></i></a></li>{% endif %}
+					{% for n in page.paginator.page_range %}
+					<li class="page-item {% if n == page.number %}active{% endif %}"><a class="page-link" href="?page={{ n }}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">{{ n }}</a></li>
+					{% endfor %}
+					{% if page.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}"><i class="bi bi-chevron-right"></i></a></li>{% endif %}
+				</ul>
+			</nav>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endblock %}

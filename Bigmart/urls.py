@@ -20,12 +20,14 @@ from django.urls import path,include
 
 import backend.urls
 import homeapp.urls
+from homeapp import views as home_views
 from . import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('backend/',include(backend.urls)),
-    path('homeapp/',include(homeapp.urls)),
+    path('', home_views.homepage, name="root"),
+    path('backend/', include(backend.urls)),
+    path('homeapp/', include(homeapp.urls)),
 ]
 urlpatterns += staticfiles_urlpatterns()
 urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
