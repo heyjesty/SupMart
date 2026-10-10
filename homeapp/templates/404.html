@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found — SupMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+	<div class="sm-card sm-empty">
+		<div class="ico"><i class="bi bi-signpost-split"></i></div>
+		<h2>We couldn't find that page</h2>
+		<p class="text-muted mb-4">The product may have sold out or the link may be wrong.</p>
+		<div class="d-flex gap-2 justify-content-center flex-wrap">
+			<a href="{% url 'shop' %}" class="btn btn-primary btn-lg">Browse products</a>
+			<a href="{% url 'homepage' %}" class="btn btn-light border btn-lg">Go home</a>
+		</div>
+	</div>
+</div>
+{% endblock %}

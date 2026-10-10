@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "builds": [
+    {
+      "src": "Bigmart/wsgi.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "100mb" }
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "Bigmart/wsgi.py" }
+  ]
+}

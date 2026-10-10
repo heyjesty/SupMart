@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+import dj_database_url
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,12 +22,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-jjp8!$qq6(i6he+s!htpeq6&9l6^k%#z3me_ud&_u5+hembv=p'
+# On Vercel these come from Project Settings -> Environment Variables.
+ON_VERCEL = bool(os.environ.get('VERCEL'))
+
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-jjp8!$qq6(i6he+s!htpeq6&9l6^k%#z3me_ud&_u5+hembv=p',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False' if ON_VERCEL else 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '.vercel.app,localhost,127.0.0.1').split(',')
+if DEBUG:
+    ALLOWED_HOSTS.append('*')
+
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', 'https://*.vercel.app').split(',') if o
+]
 
 
 # Application definition
@@ -42,6 +56,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -75,12 +90,18 @@ WSGI_APPLICATION = 'Bigmart.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Local: SQLite. Production: set DATABASE_URL (e.g. Supabase / Neon Postgres).
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=0,  # serverless: don't hold connections between invocations
+        conn_health_checks=True,
+    )
 }
+if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+    DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = os.environ.get('DATABASE_SSLMODE', 'require')
+    # Required when connecting through a transaction-mode pooler (Supabase port 6543)
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 
 # Password validation
@@ -118,8 +139,59 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 MEDIA_URL = '/media/'
+
+# WhiteNoise serves static files straight from each app's static/ folder,
+# so no collectstatic step is needed in the Vercel build.
+WHITENOISE_USE_FINDERS = True
+# STATIC_ROOT only exists after a local collectstatic; don't warn about it on Vercel.
+import warnings
+warnings.filterwarnings('ignore', message='No directory at')
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_MAX_AGE = 60 * 60 * 24 * 7
+
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+
+# Uploaded images (products, categories, profile photos). Vercel's filesystem is
+# read-only, so in production they go to S3-compatible storage (Supabase Storage,
+# Cloudflare R2 or AWS S3). Enabled when MEDIA_BUCKET is set.
+if os.environ.get('MEDIA_BUCKET'):
+    STORAGES['default'] = {
+        'BACKEND': 'storages.backends.s3.S3Storage',
+        'OPTIONS': {
+            'bucket_name': os.environ['MEDIA_BUCKET'],
+            'endpoint_url': os.environ.get('MEDIA_ENDPOINT_URL'),
+            'access_key': os.environ.get('MEDIA_ACCESS_KEY_ID'),
+            'secret_key': os.environ.get('MEDIA_SECRET_ACCESS_KEY'),
+            'region_name': os.environ.get('MEDIA_REGION', 'us-east-1'),
+            # Public URL host/path for the bucket, without https:// — e.g.
+            # <project>.supabase.co/storage/v1/object/public/<bucket>
+            'custom_domain': os.environ.get('MEDIA_PUBLIC_DOMAIN'),
+            'querystring_auth': False,
+            'file_overwrite': False,
+            'default_acl': None,
+            'object_parameters': {'CacheControl': 'max-age=604800'},
+        },
+    }
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'root': {'handlers': ['console'], 'level': 'WARNING'},
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

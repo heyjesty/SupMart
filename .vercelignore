@@ -1,0 +1,10 @@
+# Uploaded images live in cloud storage in production
+media/
+# Local databases (production uses DATABASE_URL)
+*.sqlite3
+staticfiles/
+.idea/
+.env
+**/__pycache__/
+*.pyc
+data.json
