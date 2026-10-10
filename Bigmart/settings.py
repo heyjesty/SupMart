@@ -98,6 +98,12 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
+if ON_VERCEL and not os.environ.get('DATABASE_URL'):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "DATABASE_URL is not set. db.sqlite3 is not deployed to Vercel; add your Supabase "
+        "Postgres URL under Project Settings -> Environment Variables and redeploy (see DEPLOY.md)."
+    )
 if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
     DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = os.environ.get('DATABASE_SSLMODE', 'require')
     # Required when connecting through a transaction-mode pooler (Supabase port 6543)
