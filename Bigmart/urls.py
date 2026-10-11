@@ -16,7 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns,static
-from django.urls import path,include
+from django.urls import path, include, re_path
+from django.views.static import serve
 
 import backend.urls
 import homeapp.urls
@@ -30,4 +31,8 @@ urlpatterns = [
     path('homeapp/', include(homeapp.urls)),
 ]
 urlpatterns += staticfiles_urlpatterns()
-urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif 'FileSystemStorage' in settings.STORAGES['default']['BACKEND']:
+    # No cloud storage configured: serve the bundled media/ folder directly.
+    urlpatterns += [re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT})]

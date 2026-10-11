@@ -98,12 +98,18 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
-if ON_VERCEL and not os.environ.get('DATABASE_URL'):
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        "DATABASE_URL is not set. db.sqlite3 is not deployed to Vercel; add your Supabase "
-        "Postgres URL under Project Settings -> Environment Variables and redeploy (see DEPLOY.md)."
-    )
+# Vercel's Neon / Postgres integrations may name the variable POSTGRES_URL.
+_DB_URL = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+if _DB_URL:
+    DATABASES['default'] = dj_database_url.parse(_DB_URL, conn_max_age=0, conn_health_checks=True)
+elif ON_VERCEL:
+    # No database configured: run on a temporary copy of the bundled SQLite file so
+    # the site still loads (changes are lost when the function restarts).
+    import shutil
+    _tmp_db = Path('/tmp/db.sqlite3')
+    if not _tmp_db.exists() and (BASE_DIR / 'db.sqlite3').exists():
+        shutil.copy(BASE_DIR / 'db.sqlite3', _tmp_db)
+    DATABASES['default'] = {'ENGINE': 'django.db.backends.sqlite3', 'NAME': str(_tmp_db)}
 if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
     DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = os.environ.get('DATABASE_SSLMODE', 'require')
     # Required when connecting through a transaction-mode pooler (Supabase port 6543)
