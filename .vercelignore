@@ -1,7 +1,6 @@
-# Uploaded images live in cloud storage in production
-media/
-# Local databases (production uses DATABASE_URL)
-*.sqlite3
+# media/ and db.sqlite3 are bundled: images are served from media/ and the
+# database is seeded from db.sqlite3 on first start (see Bigmart/wsgi.py)
+db.backup-*.sqlite3
 staticfiles/
 .idea/
 .env
