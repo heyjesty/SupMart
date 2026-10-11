@@ -70,6 +70,21 @@ def _seed_from_sqlite():
     log.warning('SupMart: seeded database from bundled db.sqlite3')
 
 
+# Vercel doesn't serve files whose names contain spaces/brackets, so point these
+# category images at renamed copies.
+RENAMED_MEDIA = {
+    'pngwing.com (2).png': 'category/vegetables.png',
+    'pngwing.com (1).png': 'category/fruits.png',
+}
+
+
+def _fix_media_paths():
+    from django.apps import apps
+    Category = apps.get_model('backend', 'categorydb')
+    for old, new in RENAMED_MEDIA.items():
+        Category.objects.filter(Image=old).update(Image=new)
+
+
 def _prepare_database():
     """Vercel has no build step for migrations, so apply them on cold start."""
     from django.core.management import call_command
@@ -80,6 +95,7 @@ def _prepare_database():
     try:
         call_command('migrate', interactive=False, verbosity=0)
         _seed_from_sqlite()
+        _fix_media_paths()
     except Exception:
         log.exception('SupMart: database preparation failed')
 
